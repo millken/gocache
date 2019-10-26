@@ -126,6 +126,28 @@ func TestCache_HSet_HGet(t *testing.T) {
 	}
 }
 
+func TestCache_HSet_HGetAll(t *testing.T) {
+
+	const k = "k"
+	const f = "f"
+	const v = "v"
+
+	tc := NewCache(DefaultConfig)
+
+	tc.HSet(k, f, v)
+
+	x, found := tc.HGetAll(k)
+
+	if !found {
+		t.Errorf("HGet[%s][%s] was not found", k, f)
+	}
+	if x == nil {
+		t.Error("x is nil")
+	} else if b2 := x.(map[string]interface{}); b2[f].(string) != v {
+		t.Errorf("'%s' does not equal to '%s'", b2[f].(string), v)
+	}
+}
+
 func TestDelete(t *testing.T) {
 	tc := NewCache(DefaultConfig)
 	tc.Set("foo", "bar", DefaultExpiration)

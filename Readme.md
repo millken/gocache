@@ -1,4 +1,5 @@
-# gocache [![Build Status](https://travis-ci.org/millken/groupcache.svg?branch=master)](https://travis-ci.org/millken/groupcache)
+# gocache [![Build Status](https://travis-ci.org/millken/gocache.svg?branch=master)](https://travis-ci.org/millken/gocache)[![codecov](https://codecov.io/gh/millken/gocache/branch/master/graph/badge.svg)](https://codecov.io/gh/millken/gocache)
+
 
 go-ache is an in-memory key:value store/cache similar to redis that is
 suitable for applications running on a single machine. Its major advantage is

@@ -42,7 +42,7 @@ type cache struct {
 
 var DefaultConfig = Config{
 	DefaultExpiration: DefaultExpiration,
-	CleanupInterval:   0,
+	CleanupInterval:   5 * time.Minute,
 }
 
 type Config struct {
@@ -86,7 +86,6 @@ func (c *cache) Set(k string, x interface{}, d time.Duration) {
 
 func (c *cache) Get(k string) (interface{}, bool) {
 	c.mu.RLock()
-	// "Inlining" of get and Expired
 	item, found := c.items[k]
 	if !found {
 		c.mu.RUnlock()
@@ -129,7 +128,14 @@ func (c *cache) HSet(k, f string, x interface{}) {
 	if !found {
 		obj = make(map[string]interface{})
 	} else {
-		obj = item.Object.(map[string]interface{})
+
+		switch item.Object.(type) {
+		case map[string]interface{}:
+			obj = item.Object.(map[string]interface{})
+		default:
+			obj = make(map[string]interface{})
+
+		}
 	}
 	obj[f] = x
 	c.items[k] = Item{
@@ -163,8 +169,26 @@ func (c *cache) HGet(k, f string) (interface{}, bool) {
 	return val, true
 }
 
-func (c *cache) HDel(k, f string) {
+func (c *cache) HGetAll(k string) (interface{}, bool) {
 	c.mu.RLock()
+	item, found := c.items[k]
+	if !found {
+		c.mu.RUnlock()
+		return nil, false
+	}
+	if item.Expiration > 0 {
+		if time.Now().UnixNano() > item.Expiration {
+			c.mu.RUnlock()
+			return nil, false
+		}
+	}
+	obj := item.Object.(map[string]interface{})
+	c.mu.RUnlock()
+	return obj, true
+}
+
+func (c *cache) HDel(k, f string) {
+	c.mu.Lock()
 	item, found := c.items[k]
 	if !found {
 		c.mu.RUnlock()
@@ -174,7 +198,7 @@ func (c *cache) HDel(k, f string) {
 	obj := item.Object.(map[string]interface{})
 	_, found = obj[f]
 	if !found {
-		c.mu.RUnlock()
+		c.mu.Unlock()
 		return
 	}
 	delete(obj, f)
@@ -182,7 +206,7 @@ func (c *cache) HDel(k, f string) {
 		Object:     obj,
 		Expiration: item.Expiration,
 	}
-	c.mu.RUnlock()
+	c.mu.Unlock()
 	return
 }
 
