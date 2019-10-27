@@ -96,3 +96,19 @@ func TTL(k string, d time.Duration) {
 func Memoize(k string, fn func() (interface{}, error), d time.Duration) (interface{}, error) {
 	return getInstance().Memoize(k, fn, d)
 }
+
+// Copies all unexpired items in the cache into a new map and returns it.
+func Items() map[string]Item {
+	return getInstance().Items()
+}
+
+// Returns the number of items in the cache. This may include items that have
+// expired, but have not yet been cleaned up.
+func ItemCount() int {
+	return getInstance().ItemCount()
+}
+
+// Delete all items from the cache.
+func Flush() {
+	getInstance().Flush()
+}

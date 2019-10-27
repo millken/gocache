@@ -262,6 +262,40 @@ func (c *cache) DeleteExpired() {
 	}
 }
 
+// Copies all unexpired items in the cache into a new map and returns it.
+func (c *cache) Items() map[string]Item {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	m := make(map[string]Item, len(c.items))
+	now := time.Now().UnixNano()
+	for k, v := range c.items {
+		// "Inlining" of Expired
+		if v.Expiration > 0 {
+			if now > v.Expiration {
+				continue
+			}
+		}
+		m[k] = v
+	}
+	return m
+}
+
+// Returns the number of items in the cache. This may include items that have
+// expired, but have not yet been cleaned up.
+func (c *cache) ItemCount() int {
+	c.mu.RLock()
+	n := len(c.items)
+	c.mu.RUnlock()
+	return n
+}
+
+// Delete all items from the cache.
+func (c *cache) Flush() {
+	c.mu.Lock()
+	c.items = map[string]Item{}
+	c.mu.Unlock()
+}
+
 // Memoize executes and returns the results of the given function, unless there was a cached value of the same key.
 // Only one execution is in-flight for a given key at a time.
 // The boolean return value indicates whether v was previously stored.

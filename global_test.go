@@ -36,6 +36,7 @@ func TestGlobal(t *testing.T) {
 
 func TestGlobal_Memoize(t *testing.T) {
 	InitConfig(DefaultConfig)
+	Flush()
 
 	a, err := Memoize("a", func() (interface{}, error) {
 		return 1, nil
@@ -51,6 +52,30 @@ func TestGlobal_Memoize(t *testing.T) {
 	}
 }
 
+func TestGlobal_Items_ItemCount_Flush(t *testing.T) {
+	InitConfig(DefaultConfig)
+	Flush()
+	Set("a", 1, DefaultExpiration)
+
+	if ItemCount() != 1 {
+		t.Error("count error :", ItemCount())
+	}
+
+	x := Items()
+
+	x1, found := x["a"]
+	if !found {
+		t.Error("not found while getting items")
+	}
+	if x1.Object.(int) != 1 {
+		t.Error("get value error")
+	}
+	Flush()
+	if ItemCount() != 0 {
+		t.Error("Flush error")
+	}
+
+}
 func TestGlobal_HSet_HGet(t *testing.T) {
 
 	const k = "k"

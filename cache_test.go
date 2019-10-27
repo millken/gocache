@@ -48,6 +48,31 @@ func TestCache_Memoize(t *testing.T) {
 	}
 }
 
+func TestCache_Items_ItemCount_Flush(t *testing.T) {
+	tc := NewCache(DefaultConfig)
+
+	tc.Set("a", 1, DefaultExpiration)
+
+	if tc.ItemCount() != 1 {
+		t.Error("count error :", tc.ItemCount())
+	}
+
+	x := tc.Items()
+
+	x1, found := x["a"]
+	if !found {
+		t.Error("not found while getting items")
+	}
+	if x1.Object.(int) != 1 {
+		t.Error("get value error")
+	}
+	tc.Flush()
+	if tc.ItemCount() != 0 {
+		t.Error("Flush error")
+	}
+
+}
+
 func TestCacheTimes(t *testing.T) {
 	var found bool
 
