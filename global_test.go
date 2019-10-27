@@ -21,19 +21,7 @@ func TestGlobal(t *testing.T) {
 		t.Error("Getting A found value that shouldn't exist:", a)
 	}
 
-	b, found := Get("b")
-	if found || b != nil {
-		t.Error("Getting B found value that shouldn't exist:", b)
-	}
-
-	c, found := Get("c")
-	if found || c != nil {
-		t.Error("Getting C found value that shouldn't exist:", c)
-	}
-
 	Set("a", 1, DefaultExpiration)
-	Set("b", "b", DefaultExpiration)
-	Set("c", 3.5, DefaultExpiration)
 
 	x, found := Get("a")
 	if !found {
@@ -44,25 +32,22 @@ func TestGlobal(t *testing.T) {
 	} else if a2 := x.(int); a2+2 != 3 {
 		t.Error("a2 (which should be 1) plus 2 does not equal 3; value:", a2)
 	}
+}
 
-	x, found = Get("b")
-	if !found {
-		t.Error("b was not found while getting b2")
-	}
-	if x == nil {
-		t.Error("x for b is nil")
-	} else if b2 := x.(string); b2+"B" != "bB" {
-		t.Error("b2 (which should be b) plus B does not equal bB; value:", b2)
-	}
+func TestGlobal_Memoize(t *testing.T) {
+	InitConfig(DefaultConfig)
 
-	x, found = Get("c")
-	if !found {
-		t.Error("c was not found while getting c2")
+	a, err := Memoize("a", func() (interface{}, error) {
+		return 1, nil
+	}, 1)
+
+	if err != nil || a.(int) != 1 {
+		t.Error("memoize error :", a)
 	}
-	if x == nil {
-		t.Error("x for c is nil")
-	} else if c2 := x.(float64); c2+1.2 != 4.7 {
-		t.Error("c2 (which should be 3.5) plus 1.2 does not equal 4.7; value:", c2)
+	time.Sleep(1 * time.Second)
+	x, found := Get("a")
+	if found || x != nil {
+		t.Error("a was found while getting a")
 	}
 }
 

@@ -92,3 +92,7 @@ func OnEvicted(f func(string, interface{})) {
 func TTL(k string, d time.Duration) {
 	getInstance().TTL(k, d)
 }
+
+func Memoize(k string, fn func() (interface{}, error), d time.Duration) (interface{}, error) {
+	return getInstance().Memoize(k, fn, d)
+}

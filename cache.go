@@ -38,6 +38,7 @@ type cache struct {
 	mu                sync.RWMutex
 	onEvicted         func(string, interface{})
 	janitor           *janitor
+	group             Group
 }
 
 var DefaultConfig = Config{
@@ -57,6 +58,7 @@ func NewCache(config Config) *Cache {
 	c := &cache{
 		defaultExpiration: config.DefaultExpiration,
 		items:             make(map[string]Item),
+		group:             Group{},
 	}
 	C := &Cache{c}
 
@@ -258,4 +260,26 @@ func (c *cache) DeleteExpired() {
 	for _, v := range evictedItems {
 		c.onEvicted(v.key, v.value)
 	}
+}
+
+// Memoize executes and returns the results of the given function, unless there was a cached value of the same key.
+// Only one execution is in-flight for a given key at a time.
+// The boolean return value indicates whether v was previously stored.
+func (c *cache) Memoize(k string, fn func() (interface{}, error), d time.Duration) (interface{}, error) {
+	// Check cache
+	value, found := c.Get(k)
+	if found {
+		return value, nil
+	}
+
+	value, err := c.group.Do(k, func() (interface{}, error) {
+		data, innerErr := fn()
+
+		if innerErr == nil {
+			c.Set(k, data, d)
+		}
+
+		return data, innerErr
+	})
+	return value, err
 }
