@@ -5,6 +5,37 @@ import (
 	"time"
 )
 
+func TestGlobalIncrementWithInt(t *testing.T) {
+	Flush()
+	Set("tint", 1, DefaultExpiration)
+	err := Increment("tint", 2)
+	if err != nil {
+		t.Fail()
+	}
+	x, found := Get("tint")
+	if !found {
+		t.Fail()
+	}
+	if x.(int) != 3 {
+		t.Fail()
+	}
+}
+
+func TestGlobalDecrementWithInt(t *testing.T) {
+	Flush()
+	Set("tint", 10, DefaultExpiration)
+	err := Decrement("tint", 2)
+	if err != nil {
+		t.Fail()
+	}
+	x, found := Get("tint")
+	if !found {
+		t.Fail()
+	}
+	if x.(int) != 8 {
+		t.Fail()
+	}
+}
 func TestGlobalNoConfig(t *testing.T) {
 
 	a, found := Get("a")

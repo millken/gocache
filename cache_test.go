@@ -10,6 +10,37 @@ type TestStruct struct {
 	Children []*TestStruct
 }
 
+func TestIncrementWithInt(t *testing.T) {
+	tc := NewCache(DefaultConfig)
+	tc.Set("tint", 1, DefaultExpiration)
+	err := tc.Increment("tint", 2)
+	if err != nil {
+		t.Fail()
+	}
+	x, found := tc.Get("tint")
+	if !found {
+		t.Fail()
+	}
+	if x.(int) != 3 {
+		t.Fail()
+	}
+}
+
+func TestDecrementWithInt(t *testing.T) {
+	tc := NewCache(DefaultConfig)
+	tc.Set("tint", 10, DefaultExpiration)
+	err := tc.Decrement("tint", 2)
+	if err != nil {
+		t.Fail()
+	}
+	x, found := tc.Get("tint")
+	if !found {
+		t.Fail()
+	}
+	if x.(int) != 8 {
+		t.Fail()
+	}
+}
 func TestCache(t *testing.T) {
 	tc := NewCache(DefaultConfig)
 

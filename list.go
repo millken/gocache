@@ -63,6 +63,7 @@ func (c *cache) LPop(k string) (interface{}, bool) {
 	}
 }
 
+// Rpush
 func (c *cache) RPush(k string, x interface{}) {
 	var obj *list.List
 	c.mu.Lock()

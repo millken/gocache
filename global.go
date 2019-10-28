@@ -41,6 +41,14 @@ func getInstance() *Cache {
 	return instance
 }
 
+func Increment(k string, n int64) error {
+	return getInstance().Increment(k, n)
+}
+
+func Decrement(k string, n int64) error {
+	return getInstance().Decrement(k, n)
+}
+
 func Set(k string, x interface{}, d time.Duration) {
 	getInstance().Set(k, x, d)
 }
