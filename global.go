@@ -2,121 +2,109 @@ package gocache
 
 import (
 	"runtime"
-	"sync"
 	"time"
 )
 
-type singleton struct {
-}
-
 var instance *Cache
-var once sync.Once
-var initConfig = false
 
+func init() {
+	InitConfig(DefaultConfig)
+}
 func InitConfig(config Config) {
 
-	once.Do(func() {
-		initConfig = true
-		if config.DefaultExpiration == 0 {
-			config.DefaultExpiration = -1
-		}
-		c := &cache{
-			defaultExpiration: config.DefaultExpiration,
-			items:             make(map[string]Item),
-		}
-		instance = &Cache{c}
-
-		if config.CleanupInterval > 0 {
-			runJanitor(c, config.CleanupInterval)
-			runtime.SetFinalizer(instance, stopJanitor)
-		}
-	})
-
-}
-
-func getInstance() *Cache {
-	if !initConfig {
-		InitConfig(DefaultConfig)
+	if config.DefaultExpiration == 0 {
+		config.DefaultExpiration = -1
 	}
-	return instance
+	c := &cache{
+		defaultExpiration: config.DefaultExpiration,
+		items:             make(map[string]Item),
+		group:             Group{},
+	}
+	instance = &Cache{c}
+
+	if config.CleanupInterval > 0 {
+		runJanitor(c, config.CleanupInterval)
+		runtime.SetFinalizer(instance, stopJanitor)
+	}
+
 }
 
 func Increment(k string, n int64) error {
-	return getInstance().Increment(k, n)
+	return instance.Increment(k, n)
 }
 
 func Decrement(k string, n int64) error {
-	return getInstance().Decrement(k, n)
+	return instance.Decrement(k, n)
 }
 
 func Set(k string, x interface{}, d time.Duration) {
-	getInstance().Set(k, x, d)
+	instance.Set(k, x, d)
 }
 
 func Get(k string) (interface{}, bool) {
-	return getInstance().Get(k)
+	return instance.Get(k)
 }
 
 func Delete(k string) {
-	getInstance().Delete(k)
+	instance.Delete(k)
 }
 
 func HSet(k, f string, x interface{}) {
-	getInstance().HSet(k, f, x)
+	instance.HSet(k, f, x)
 }
 
 func HGet(k, f string) (interface{}, bool) {
-	return getInstance().HGet(k, f)
+	return instance.HGet(k, f)
 }
 
 func HGetAll(k string) (interface{}, bool) {
-	return getInstance().HGetAll(k)
+	return instance.HGetAll(k)
 }
 
 func HDel(k, f string) {
-	getInstance().HDel(k, f)
+	instance.HDel(k, f)
 }
 
 func LPush(k string, x interface{}) {
-	getInstance().LPush(k, x)
+	instance.LPush(k, x)
 }
 
 func LPop(k string) (interface{}, bool) {
-	return getInstance().LPop(k)
+	return instance.LPop(k)
 }
 
 func RPush(k string, x interface{}) {
-	getInstance().RPush(k, x)
+	instance.RPush(k, x)
 }
 
 func RPop(k string) (interface{}, bool) {
-	return getInstance().RPop(k)
+	return instance.RPop(k)
 }
 
 func OnEvicted(f func(string, interface{})) {
-	getInstance().OnEvicted(f)
+	instance.OnEvicted(f)
 }
 
 func TTL(k string, d time.Duration) {
-	getInstance().TTL(k, d)
+	instance.TTL(k, d)
 }
 
 func Memoize(k string, fn func() (interface{}, error), d time.Duration) (interface{}, error) {
-	return getInstance().Memoize(k, fn, d)
+	return instance.Memoize(k, fn, d)
 }
 
 // Copies all unexpired items in the cache into a new map and returns it.
 func Items() map[string]Item {
-	return getInstance().Items()
+	return instance.Items()
 }
 
 // Returns the number of items in the cache. This may include items that have
 // expired, but have not yet been cleaned up.
 func ItemCount() int {
-	return getInstance().ItemCount()
+	return instance.ItemCount()
 }
 
 // Delete all items from the cache.
 func Flush() {
-	getInstance().Flush()
+	instance.Flush()
 }

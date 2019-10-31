@@ -182,6 +182,33 @@ func (c *cache) Set(k string, x interface{}, d time.Duration) {
 	c.mu.Unlock()
 }
 
+func (c *cache) set(k string, x interface{}, d time.Duration) {
+	var e int64
+	if d == DefaultExpiration {
+		d = c.defaultExpiration
+	}
+	if d > 0 {
+		e = time.Now().Add(d).UnixNano()
+	}
+	c.items[k] = Item{
+		Object:     x,
+		Expiration: e,
+	}
+}
+
+func (c *cache) get(k string) (interface{}, bool) {
+	item, found := c.items[k]
+	if !found {
+		return nil, false
+	}
+
+	if item.Expiration > 0 {
+		if time.Now().UnixNano() > item.Expiration {
+			return nil, false
+		}
+	}
+	return item.Object, true
+}
 func (c *cache) Get(k string) (interface{}, bool) {
 	c.mu.RLock()
 	item, found := c.items[k]
@@ -235,12 +262,12 @@ func (c *cache) HSet(k, f string, x interface{}) {
 
 		}
 	}
+
 	obj[f] = x
 	c.items[k] = Item{
 		Object:     obj,
 		Expiration: 0, //Hset can not
 	}
-
 	c.mu.Unlock()
 }
 
@@ -396,9 +423,11 @@ func (c *cache) Flush() {
 // Only one execution is in-flight for a given key at a time.
 // The boolean return value indicates whether v was previously stored.
 func (c *cache) Memoize(k string, fn func() (interface{}, error), d time.Duration) (interface{}, error) {
+	c.mu.Lock()
 	// Check cache
-	value, found := c.Get(k)
+	value, found := c.get(k)
 	if found {
+		c.mu.Unlock()
 		return value, nil
 	}
 
@@ -406,10 +435,10 @@ func (c *cache) Memoize(k string, fn func() (interface{}, error), d time.Duratio
 		data, innerErr := fn()
 
 		if innerErr == nil {
-			c.Set(k, data, d)
+			c.set(k, data, d)
 		}
-
 		return data, innerErr
 	})
+	c.mu.Unlock()
 	return value, err
 }

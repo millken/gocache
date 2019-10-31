@@ -1,6 +1,7 @@
 package gocache
 
 import (
+	"math/rand"
 	"testing"
 	"time"
 )
@@ -175,17 +176,23 @@ func TestCache_HSet_HGetAll(t *testing.T) {
 
 	tc := NewCache(DefaultConfig)
 
-	tc.HSet(k, f, v)
+	go func() {
+		tc.HSet(k, f, rand.Intn(1000))
+		for i := 1; i < 2; i++ {
+			tc.HSet(k, f, i)
+			time.Sleep(1 * time.Second)
+		}
+	}()
+	for i := 1; i < 2; i++ {
+		x, found := tc.HGetAll(k)
 
-	x, found := tc.HGetAll(k)
-
-	if !found {
-		t.Errorf("HGet[%s][%s] was not found", k, f)
-	}
-	if x == nil {
-		t.Error("x is nil")
-	} else if b2 := x.(map[string]interface{}); b2[f].(string) != v {
-		t.Errorf("'%s' does not equal to '%s'", b2[f].(string), v)
+		if !found {
+			t.Errorf("HGet[%s][%s] was not found", k, f)
+		}
+		if x == nil {
+			t.Error("x is nil")
+		}
+		time.Sleep(1 * time.Second)
 	}
 }
 
