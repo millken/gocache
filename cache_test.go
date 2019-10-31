@@ -184,6 +184,7 @@ func TestCache_HSet_HGetAll(t *testing.T) {
 		}
 	}()
 	for i := 1; i < 2; i++ {
+		time.Sleep(1 * time.Second)
 		x, found := tc.HGetAll(k)
 
 		if !found {
