@@ -17,7 +17,7 @@ const (
 )
 
 type Item struct {
-	Object     interface{}
+	Object     any
 	Expiration int64
 }
 
@@ -37,9 +37,9 @@ type cache struct {
 	defaultExpiration time.Duration
 	items             map[string]Item
 	mu                sync.RWMutex
-	onEvicted         func(string, interface{})
+	onEvicted         func(string, any)
 	janitor           *janitor
-	group             Group
+	group             Group[string, any]
 }
 
 var DefaultConfig = Config{
@@ -56,7 +56,7 @@ func NewCache(config Config) *Cache {
 	c := &cache{
 		defaultExpiration: config.DefaultExpiration,
 		items:             make(map[string]Item),
-		group:             Group{},
+		group:             Group[string, any]{},
 	}
 	C := &Cache{c}
 
@@ -108,7 +108,7 @@ func (c *cache) Increment(k string, n int64) error {
 		v.Object = v.Object.(float64) + float64(n)
 	default:
 		c.mu.Unlock()
-		return fmt.Errorf("The value for %s is not an integer", k)
+		return fmt.Errorf("the value for %s is not an integer", k)
 	}
 	c.items[k] = v
 	c.mu.Unlock()
@@ -158,14 +158,14 @@ func (c *cache) Decrement(k string, n int64) error {
 		v.Object = v.Object.(float64) - float64(n)
 	default:
 		c.mu.Unlock()
-		return fmt.Errorf("The value for %s is not an integer", k)
+		return fmt.Errorf("the value for %s is not an integer", k)
 	}
 	c.items[k] = v
 	c.mu.Unlock()
 	return nil
 }
 
-func (c *cache) Set(k string, x interface{}, d time.Duration) {
+func (c *cache) Set(k string, x any, d time.Duration) {
 	var e int64
 	if d == DefaultExpiration {
 		d = c.defaultExpiration
@@ -182,7 +182,7 @@ func (c *cache) Set(k string, x interface{}, d time.Duration) {
 	c.mu.Unlock()
 }
 
-func (c *cache) set(k string, x interface{}, d time.Duration) {
+func (c *cache) set(k string, x any, d time.Duration) {
 	var e int64
 	if d == DefaultExpiration {
 		d = c.defaultExpiration
@@ -196,7 +196,7 @@ func (c *cache) set(k string, x interface{}, d time.Duration) {
 	}
 }
 
-func (c *cache) get(k string) (interface{}, bool) {
+func (c *cache) get(k string) (any, bool) {
 	item, found := c.items[k]
 	if !found {
 		return nil, false
@@ -209,7 +209,7 @@ func (c *cache) get(k string) (interface{}, bool) {
 	}
 	return item.Object, true
 }
-func (c *cache) Get(k string) (interface{}, bool) {
+func (c *cache) Get(k string) (any, bool) {
 	c.mu.RLock()
 	item, found := c.items[k]
 	if !found {
@@ -235,7 +235,7 @@ func (c *cache) Delete(k string) {
 	}
 }
 
-func (c *cache) delete(k string) (interface{}, bool) {
+func (c *cache) delete(k string) (any, bool) {
 	if c.onEvicted != nil {
 		if v, found := c.items[k]; found {
 			delete(c.items, k)
@@ -246,19 +246,19 @@ func (c *cache) delete(k string) (interface{}, bool) {
 	return nil, false
 }
 
-func (c *cache) HSet(k, f string, x interface{}) {
-	var obj map[string]interface{}
+func (c *cache) HSet(k, f string, x any) {
+	var obj map[string]any
 	c.mu.Lock()
 	item, found := c.items[k]
 	if !found {
-		obj = make(map[string]interface{})
+		obj = make(map[string]any)
 	} else {
 
 		switch item.Object.(type) {
-		case map[string]interface{}:
-			obj = item.Object.(map[string]interface{})
+		case map[string]any:
+			obj = item.Object.(map[string]any)
 		default:
-			obj = make(map[string]interface{})
+			obj = make(map[string]any)
 
 		}
 	}
@@ -271,7 +271,7 @@ func (c *cache) HSet(k, f string, x interface{}) {
 	c.mu.Unlock()
 }
 
-func (c *cache) HGet(k, f string) (interface{}, bool) {
+func (c *cache) HGet(k, f string) (any, bool) {
 	c.mu.RLock()
 	item, found := c.items[k]
 	if !found {
@@ -284,7 +284,7 @@ func (c *cache) HGet(k, f string) (interface{}, bool) {
 			return nil, false
 		}
 	}
-	obj := item.Object.(map[string]interface{})
+	obj := item.Object.(map[string]any)
 	val, found := obj[f]
 	if !found {
 		c.mu.RUnlock()
@@ -294,7 +294,7 @@ func (c *cache) HGet(k, f string) (interface{}, bool) {
 	return val, true
 }
 
-func (c *cache) HGetAll(k string) (interface{}, bool) {
+func (c *cache) HGetAll(k string) (any, bool) {
 	c.mu.RLock()
 	item, found := c.items[k]
 	if !found {
@@ -307,7 +307,7 @@ func (c *cache) HGetAll(k string) (interface{}, bool) {
 			return nil, false
 		}
 	}
-	obj := item.Object.(map[string]interface{})
+	obj := item.Object.(map[string]any)
 	c.mu.RUnlock()
 	return obj, true
 }
@@ -320,7 +320,7 @@ func (c *cache) HDel(k, f string) {
 		return
 	}
 
-	obj := item.Object.(map[string]interface{})
+	obj := item.Object.(map[string]any)
 	_, found = obj[f]
 	if !found {
 		c.mu.Unlock()
@@ -338,13 +338,14 @@ func (c *cache) HDel(k, f string) {
 // Sets an (optional) function that is called with the key and value when an
 // item is evicted from the cache. (Including when it is deleted manually, but
 // not when it is overwritten.) Set to nil to disable.
-func (c *cache) OnEvicted(f func(string, interface{})) {
+func (c *cache) OnEvicted(f func(string, any)) {
 	c.mu.Lock()
 	c.onEvicted = f
 	c.mu.Unlock()
 }
 
-func (c *cache) TTL(k string, d time.Duration) {
+//SetExpiration sets the expiration time for the cache.
+func (c *cache) SetExpiration(k string, d time.Duration) {
 	var e int64
 	if d > 0 {
 		e = time.Now().Add(d).UnixNano()
@@ -363,9 +364,10 @@ func (c *cache) TTL(k string, d time.Duration) {
 
 type keyAndValue struct {
 	key   string
-	value interface{}
+	value any
 }
 
+//DeleteExpired deletes expired items
 func (c *cache) DeleteExpired() {
 	var evictedItems []keyAndValue
 	now := time.Now().UnixNano()
@@ -422,7 +424,7 @@ func (c *cache) Flush() {
 // Memoize executes and returns the results of the given function, unless there was a cached value of the same key.
 // Only one execution is in-flight for a given key at a time.
 // The boolean return value indicates whether v was previously stored.
-func (c *cache) Memoize(k string, fn func() (interface{}, error), d time.Duration) (interface{}, error) {
+func (c *cache) Memoize(k string, fn func() (any, error), d time.Duration) (any, error) {
 	c.mu.Lock()
 	// Check cache
 	value, found := c.get(k)
@@ -431,7 +433,7 @@ func (c *cache) Memoize(k string, fn func() (interface{}, error), d time.Duratio
 		return value, nil
 	}
 
-	value, err := c.group.Do(k, func() (interface{}, error) {
+	value, err, _ := c.group.Do(k, func() (any, error) {
 		data, innerErr := fn()
 
 		if innerErr == nil {

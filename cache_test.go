@@ -66,7 +66,7 @@ func TestCache(t *testing.T) {
 func TestCache_Memoize(t *testing.T) {
 	tc := NewCache(DefaultConfig)
 
-	a, err := tc.Memoize("a", func() (interface{}, error) {
+	a, err := tc.Memoize("a", func() (any, error) {
 		return 1, nil
 	}, 1)
 
@@ -253,3 +253,14 @@ func BenchmarkCacheHGet(b *testing.B) {
 		tc.HGet("foo", "bar")
 	}
 }
+
+/*
+goos: darwin
+goarch: arm64
+pkg: github.com/millken/gocache
+BenchmarkCacheGetExpiring-8      	23269798	        51.40 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCacheGetNotExpiring-8   	86889364	        13.88 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCacheHGet-8             	53281531	        22.63 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/millken/gocache	6.040s
+*/

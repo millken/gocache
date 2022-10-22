@@ -18,7 +18,7 @@ func InitConfig(config Config) {
 	c := &cache{
 		defaultExpiration: config.DefaultExpiration,
 		items:             make(map[string]Item),
-		group:             Group{},
+		group:             Group[string, any]{},
 	}
 	instance = &Cache{c}
 
@@ -37,11 +37,11 @@ func Decrement(k string, n int64) error {
 	return instance.Decrement(k, n)
 }
 
-func Set(k string, x interface{}, d time.Duration) {
+func Set(k string, x any, d time.Duration) {
 	instance.Set(k, x, d)
 }
 
-func Get(k string) (interface{}, bool) {
+func Get(k string) (any, bool) {
 	return instance.Get(k)
 }
 
@@ -49,15 +49,15 @@ func Delete(k string) {
 	instance.Delete(k)
 }
 
-func HSet(k, f string, x interface{}) {
+func HSet(k, f string, x any) {
 	instance.HSet(k, f, x)
 }
 
-func HGet(k, f string) (interface{}, bool) {
+func HGet(k, f string) (any, bool) {
 	return instance.HGet(k, f)
 }
 
-func HGetAll(k string) (interface{}, bool) {
+func HGetAll(k string) (any, bool) {
 	return instance.HGetAll(k)
 }
 
@@ -65,31 +65,31 @@ func HDel(k, f string) {
 	instance.HDel(k, f)
 }
 
-func LPush(k string, x interface{}) {
+func LPush(k string, x any) {
 	instance.LPush(k, x)
 }
 
-func LPop(k string) (interface{}, bool) {
+func LPop(k string) (any, bool) {
 	return instance.LPop(k)
 }
 
-func RPush(k string, x interface{}) {
+func RPush(k string, x any) {
 	instance.RPush(k, x)
 }
 
-func RPop(k string) (interface{}, bool) {
+func RPop(k string) (any, bool) {
 	return instance.RPop(k)
 }
 
-func OnEvicted(f func(string, interface{})) {
+func OnEvicted(f func(string, any)) {
 	instance.OnEvicted(f)
 }
 
-func TTL(k string, d time.Duration) {
-	instance.TTL(k, d)
+func SetExpiration(k string, d time.Duration) {
+	instance.SetExpiration(k, d)
 }
 
-func Memoize(k string, fn func() (interface{}, error), d time.Duration) (interface{}, error) {
+func Memoize(k string, fn func() (any, error), d time.Duration) (any, error) {
 	return instance.Memoize(k, fn, d)
 }
 

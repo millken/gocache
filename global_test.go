@@ -70,7 +70,7 @@ func TestGlobal_Memoize(t *testing.T) {
 	InitConfig(DefaultConfig)
 	Flush()
 
-	a, err := Memoize("a", func() (interface{}, error) {
+	a, err := Memoize("a", func() (any, error) {
 		return 1, nil
 	}, 1)
 

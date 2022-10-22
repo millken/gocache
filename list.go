@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func (c *cache) LPush(k string, x interface{}) {
+func (c *cache) LPush(k string, x any) {
 	var obj *list.List
 	c.mu.Lock()
 	item, found := c.items[k]
@@ -30,7 +30,7 @@ func (c *cache) LPush(k string, x interface{}) {
 	c.mu.Unlock()
 }
 
-func (c *cache) LPop(k string) (interface{}, bool) {
+func (c *cache) LPop(k string) (any, bool) {
 	c.mu.Lock()
 	item, found := c.items[k]
 	if !found {
@@ -64,7 +64,7 @@ func (c *cache) LPop(k string) (interface{}, bool) {
 }
 
 // Rpush
-func (c *cache) RPush(k string, x interface{}) {
+func (c *cache) RPush(k string, x any) {
 	var obj *list.List
 	c.mu.Lock()
 	item, found := c.items[k]
@@ -89,7 +89,7 @@ func (c *cache) RPush(k string, x interface{}) {
 	c.mu.Unlock()
 }
 
-func (c *cache) RPop(k string) (interface{}, bool) {
+func (c *cache) RPop(k string) (any, bool) {
 	c.mu.Lock()
 	item, found := c.items[k]
 	if !found {
